@@ -1,14 +1,51 @@
 pub mod schema;
 mod models;
 
-use diesel::prelude::*;
+use diesel::{backend::Backend, deserialize::{self, FromSql, FromSqlRow}, expression::AsExpression, prelude::*, serialize::{self, Output, ToSql}, sql_types::Text};
 use crate::schema::user_roles;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromSqlRow, AsExpression)]
+#[diesel(sql_type = Text)]
+pub enum UserRoleStatus {
+    Disabled,
+    Active,
+}
+
+impl<DB> ToSql<Text, DB> for UserRoleStatus
+where
+    DB: Backend,
+    str: ToSql<Text, DB>,
+{
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, DB>) -> serialize::Result {
+        let value = match *self {
+            UserRoleStatus::Disabled => "Disabled",
+            UserRoleStatus::Active => "Active",
+        };
+        value.to_sql(out)
+    }
+}
+
+impl<DB> FromSql<Text, DB> for UserRoleStatus
+where
+    DB: Backend,
+    String: FromSql<Text, DB>,
+{
+    fn from_sql(bytes: <DB as Backend>::RawValue<'_>) -> deserialize::Result<Self> {
+        let s = String::from_sql(bytes)?;
+        match s.as_str() {
+            "Disabled" => Ok(UserRoleStatus::Disabled),
+            "Active" => Ok(UserRoleStatus::Active),
+            _ => Err(format!("Unknown subject_type variant: {}", s).into()),
+        }
+    }
+}
 
 #[derive(Debug, Queryable, Insertable)]
 #[diesel(table_name = user_roles)]
 pub struct UserRole {
     pub user_id: i64,
     pub role_id: String,
+    pub status: UserRoleStatus,
 }
 
 pub struct Role {
@@ -107,23 +144,25 @@ mod tests {
             r#"
             CREATE TABLE IF NOT EXISTS user_roles (
                 user_id BIGINT PRIMARY KEY NOT NULL,
-                role_id VARCHAR(32) NOT NULL
+                role_id VARCHAR(32) NOT NULL,
+                status VARCHAR(16) NOT NULL
             );
             "#
         )
         .execute(conn)
-        .unwrap_or_else(|_| panic!("Error creating subjects table"));
+        .unwrap_or_else(|e| panic!("Create table error: {}", e));
     }
 
     fn insert_user_roles(conn: &mut SqliteConnection, user_id: i64, role_id: &str) {
         let new_user_role = UserRole {
             user_id,
             role_id: role_id.to_string(),
+            status: crate::UserRoleStatus::Active,
         };
         insert_into(user_roles::table)
             .values(&new_user_role)
             .execute(conn)
-            .unwrap_or_else(|_| panic!("Error insert zero user roles"));
+            .unwrap_or_else(|e| panic!("Insert error: {}", e));
     }
 
     #[test]
@@ -134,6 +173,7 @@ mod tests {
     #[test]
     fn test_insert_user_role() {
         let connection = &mut establish_sqlite_connection(DATABASE_URL);
+        maybe_create_user_roles_table(connection);
         insert_user_roles(connection, 0, "root");
     }
 
