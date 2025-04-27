@@ -1,28 +1,18 @@
 #[allow(unused)]
 
-pub enum UserStatus {
-    CreatePending,
-    UpdatePending,
-    Suspend,
-    Disabled,
-    Active,
-    Deleted,
-}
-pub struct BasicUser {
+pub struct Subject {
     pub id: u64,
-    pub username: String,
-    pub email: String,
-    pub password: String,
-    pub status: UserStatus,
+    pub subject_type: String,
 }
 
 pub struct Role {
-    pub id: String,
+    pub id: u64,
     pub name: String,
     pub description: Option<String>,
 }
 
 pub struct Permission {
+    pub id: u64,
     pub resource: String,
     pub action: u16, //TODO: use bitmap for permission.
 }
@@ -39,6 +29,24 @@ impl Permission {
     pub fn is_readonly(&self) -> bool {
         self.action & Self::RW_MASK == Self::READ
     }
+
+    pub fn is_write(&self) -> bool {
+        self.action & Self::W_MASK == Self::W_MASK
+    }
+}
+
+pub struct SubjectRole {
+    pub subject_id: u64,
+    pub role_id: u64,
+}
+
+pub struct RolePermission {
+    pub role_id: u64,
+    pub permission_id: u64,
+}
+
+pub struct PermissionStore {
+    
 }
 
 #[cfg(test)]
