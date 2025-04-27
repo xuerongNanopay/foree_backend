@@ -115,10 +115,10 @@ mod tests {
         .unwrap_or_else(|_| panic!("Error creating subjects table"));
     }
 
-    fn insert_zero_user_roles(conn: &mut SqliteConnection) {
+    fn insert_user_roles(conn: &mut SqliteConnection, user_id: i64, role_id: &str) {
         let new_user_role = UserRole {
-            user_id: 0,
-            role_id: "root".to_string(),
+            user_id,
+            role_id: role_id.to_string(),
         };
         insert_into(user_roles::table)
             .values(&new_user_role)
@@ -129,6 +129,12 @@ mod tests {
     #[test]
     fn test_sqlite_connection() {
         establish_sqlite_connection(DATABASE_URL);
+    }
+
+    #[test]
+    fn test_insert_user_role() {
+        let connection = &mut establish_sqlite_connection(DATABASE_URL);
+        insert_user_roles(connection, 0, "root");
     }
 
     #[test]
