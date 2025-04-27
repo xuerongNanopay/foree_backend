@@ -1,14 +1,35 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+#[allow(unused)]
+
+pub enum UserStatus {
+    CreatePending,
+    UpdatePending,
+    Suspend,
+    Disabled,
+    Active,
+    Deleted,
+}
+pub struct BasicUser {
+    pub id: u64,
+    pub username: String,
+    pub email: String,
+    pub password: String,
+    pub status: UserStatus,
+}
+
+pub struct Role {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+}
+
+pub struct Permission {
+    pub resource: String,
+    pub action: u32, //TODO: use bitmap for permission.
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
     }
 }
