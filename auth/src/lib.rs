@@ -4,7 +4,7 @@ mod models;
 use diesel::prelude::*;
 use crate::schema::user_roles;
 
-#[derive(Debug, Queryable, Selectable, Insertable)]
+#[derive(Debug, Queryable, Insertable)]
 #[diesel(table_name = user_roles)]
 pub struct UserRole {
     pub user_id: i64,
@@ -86,9 +86,9 @@ impl PermissionStore {
 mod tests {
     use std::{fs, path::Path};
 
-    use diesel::{sql_query, Connection, RunQueryDsl, SqliteConnection};
+    use diesel::{insert_into, sql_query, Connection, RunQueryDsl, SqliteConnection};
 
-    use crate::UserRole;
+    use crate::{schema::user_roles, UserRole};
 
     const DATABASE_URL:&str = "./target/test/sqlite/auth.db";
 
@@ -115,8 +115,15 @@ mod tests {
         .unwrap_or_else(|_| panic!("Error creating subjects table"));
     }
 
-    fn insert_user_roles(conn: &mut SqliteConnection) {
-
+    fn insert_zero_user_roles(conn: &mut SqliteConnection) {
+        let new_user_role = UserRole {
+            user_id: 0,
+            role_id: "root".to_string(),
+        };
+        insert_into(user_roles::table)
+            .values(&new_user_role)
+            .execute(conn)
+            .unwrap_or_else(|_| panic!("Error insert zero user roles"));
     }
 
     #[test]
