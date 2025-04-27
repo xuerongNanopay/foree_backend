@@ -24,7 +24,21 @@ pub struct Role {
 
 pub struct Permission {
     pub resource: String,
-    pub action: u32, //TODO: use bitmap for permission.
+    pub action: u16, //TODO: use bitmap for permission.
+}
+
+impl Permission {
+    pub const READ:   u16 = 1<<0;
+    pub const CREATE: u16 = 1<<1;
+    pub const UPDATE: u16 = 1<<2;
+    pub const DELETE: u16 = 1<<3;
+
+    const W_MASK: u16 = Self::UPDATE | Self::DELETE | Self::CREATE;
+    const RW_MASK: u16 = Self::W_MASK | Self::READ;
+
+    pub fn is_readonly(&self) -> bool {
+        self.action & Self::RW_MASK == Self::READ
+    }
 }
 
 #[cfg(test)]
