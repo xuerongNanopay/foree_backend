@@ -123,7 +123,7 @@ impl PermissionStore {
 mod tests {
     use std::{fs, path::Path};
 
-    use diesel::{insert_into, sql_query, Connection, RunQueryDsl, SqliteConnection};
+    use diesel::{insert_into, query_dsl::methods::FilterDsl, sql_query, Connection, ExpressionMethods, RunQueryDsl, SqliteConnection};
 
     use crate::{schema::user_roles, UserRole};
 
@@ -178,11 +178,21 @@ mod tests {
     }
 
     #[test]
-    fn test_fetch_all_subjects() {
-        use crate::schema::user_roles::dsl::*;
+    fn test_fetch_user_roles_by_user_id() {
+        use crate::schema::user_roles::dsl as user_roles_schema;
+
+        let connection = &mut establish_sqlite_connection(DATABASE_URL);
+
+        let result = user_roles_schema::user_roles.filter(user_roles_schema::user_id.eq(0)).first::<UserRole>(connection).expect("Error loading user_role by user_id");
+        println!("User Roles {:#?}", result);
+    }
+
+    #[test]
+    fn test_fetch_all_user_roles() {
+        use crate::schema::user_roles::dsl as user_roles_schema;
         let connection = &mut establish_sqlite_connection(DATABASE_URL);
         maybe_create_user_roles_table(connection);
-        let results = user_roles.load::<UserRole>(connection).expect("Error loading all subjects");
+        let results = user_roles_schema::user_roles.load::<UserRole>(connection).expect("Error loading all subjects");
 
         println!("=========");
         for subject in results {
