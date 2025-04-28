@@ -48,6 +48,12 @@ pub struct UserRole {
     pub status: UserRoleStatus,
 }
 
+#[derive(AsChangeset)]
+#[diesel(table_name = user_roles)]
+pub struct UpdateUserRole {
+    pub status: Option<UserRoleStatus>,
+}
+
 pub struct Role {
     pub id: String,
     pub name: String,
@@ -125,7 +131,7 @@ mod tests {
 
     use diesel::{insert_into, query_dsl::methods::FilterDsl, sql_query, Connection, ExpressionMethods, RunQueryDsl, SqliteConnection};
 
-    use crate::{schema::user_roles, UserRole};
+    use crate::{schema::user_roles, UpdateUserRole, UserRole, UserRoleStatus};
 
     const DATABASE_URL:&str = "./target/test/sqlite/auth.db";
 
@@ -175,6 +181,20 @@ mod tests {
         let connection = &mut establish_sqlite_connection(DATABASE_URL);
         maybe_create_user_roles_table(connection);
         insert_user_roles(connection, 0, "root");
+    }
+
+    #[test]
+    fn test_update_user_role() {
+        use crate::schema::user_roles::dsl as user_roles_schema;
+        let connection = &mut establish_sqlite_connection(DATABASE_URL);
+        let changes = UpdateUserRole{
+            status: Some(UserRoleStatus::Disabled),
+        };
+
+        diesel::update(user_roles_schema::user_roles.filter(user_roles_schema::user_id.eq(0)))
+            .set(&changes)
+            .execute(connection)
+            .expect("Error update user_role by user_id");
     }
 
     #[test]
